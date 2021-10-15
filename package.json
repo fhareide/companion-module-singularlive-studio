@@ -10,6 +10,9 @@
   "description": "Send API-request to Singular.Live controlling overlays",
   "main": "index.js",
   "author": "Fredrik Mediå <fredrik.mediaa@gmail.com>",
+  "contributors": [
+    "Fredrik Hareide <fredrik.hareide@gmail.com>"
+  ],
   "license": "MIT",
   "dependencies": {},
   "devDependencies": {
