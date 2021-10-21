@@ -17,11 +17,11 @@ class instance extends instance_skel {
 		})
 
 		this.compositions = []
+		this.compData = []
 		this.controlnodes = []
 		this.buttons = []
 		this.checkboxes = []
 		this.timers = []
-		this.states = {}
 	}
 
 	actions(system) {
@@ -108,6 +108,7 @@ class instance extends instance_skel {
 
 	async updateCompositions() {
 		this.compositions = []
+		this.compData = []
 		this.controlnodes = []
 		this.buttons = []
 		this.checkboxes = []
@@ -115,40 +116,57 @@ class instance extends instance_skel {
 
 		await this.SingularLive.getElements()
 			.then((res) => {
+				this.compData = Object.fromEntries(
+					res.map(({ id, name, state, logicLayer }) => [
+						id,
+						{
+							name,
+							state,
+							tagcolor: logicLayer?.tag ?? '#000000',
+						},
+					])
+				)
+
 				for (let i = 0; i < res.length; i++) {
 					if (res[i].name) {
-						this.states[res[i].id] = res[i].state
 						this.compositions.push({
 							id: res[i].id,
 							label: res[i].name,
 						})
 
-						if (res[i].nodes) {
-							let nodes = res[i].nodes.reduce((r, c) => Object.assign(r, c), {})
+						console.log(JSON.stringify(this.compData[res[i].id]))
 
-							const keys = Object.keys(nodes)
-							for (let j = 0; j < keys.length; j++) {
-								const node = nodes[keys[j]]
+						if (res[i].controlnode && res[i].controlnode.model && res[i].controlnode.model.fields) {
+							let fields = []
+							fields = Object.entries(res[i].controlnode.model.fields).map((entry) => {
+								return {
+									title: entry[1].title,
+									id: entry[1].id,
+									type: entry[1].type,
+									defaultValue: entry[1].defaultValue,
+								}
+							})
 
+							for (let j = 0; j < fields.length; j++) {
 								const controlNode = {
 									type: 'textinput',
-									id: res[i].id + '&!&!&' + node.id,
-									label: res[i].name + ' / ' + keys[j],
+									id: res[i].id + '&!&!&' + fields[j].id,
+									label: res[i].name + ' / ' + fields[j].title,
 								}
 
 								if (
-									node.type == 'text' ||
-									node.type == 'number' ||
-									node.type == 'textarea' ||
-									node.type == 'image' ||
-									node.type == 'json'
+									fields[j].type == 'text' ||
+									fields[j].type == 'number' ||
+									fields[j].type == 'textarea' ||
+									fields[j].type == 'image' ||
+									fields[j].type == 'json'
 								) {
 									this.controlnodes.push(controlNode)
-								} else if (node.type == 'button') {
+								} else if (fields[j].type == 'button') {
 									this.buttons.push(controlNode)
-								} else if (node.type == 'timecontrol') {
+								} else if (fields[j].type == 'timecontrol') {
 									this.timers.push(controlNode)
-								} else if (node.type == 'checkbox') {
+								} else if (fields[j].type == 'checkbox') {
 									this.checkboxes.push(controlNode)
 								}
 							}
@@ -171,7 +189,7 @@ class instance extends instance_skel {
 		await this.SingularLive.getStates()
 			.then((res) => {
 				for (let i = 0; i < res.length; i++) {
-					this.states[res[i].id] = res[i].state
+					this.compData[res[i].id].state = res[i].state
 				}
 				this.checkFeedbacks()
 			})
@@ -210,6 +228,17 @@ class instance extends instance_skel {
 			this.log('error', error.message)
 			this.debug(error)
 		}
+	}
+
+	hexToRgb(hex) {
+		var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
+		return result
+			? {
+					r: parseInt(result[1], 16),
+					g: parseInt(result[2], 16),
+					b: parseInt(result[3], 16),
+			  }
+			: null
 	}
 }
 
